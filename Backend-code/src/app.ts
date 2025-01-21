@@ -1,0 +1,14 @@
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import bodyParser from "body-parser";
+import connectDB from "./utils/db";
+import eventRoutes from "./routes/Event.route";
+dotenv.config();
+const app = express();
+connectDB();
+app.use(cors());
+app.use(bodyParser.json());
+app.use("/api/events", eventRoutes);
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
