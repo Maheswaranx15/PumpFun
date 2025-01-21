@@ -12,7 +12,7 @@ module.exports = {
   networks: {
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-      accounts: ['a93f2b1407bca31ff6a5de58cf8c94f5ebbee8e16a446f9c5073c090335bcc0a']
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY]
     }
   },
 
