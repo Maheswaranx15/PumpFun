@@ -2,8 +2,7 @@ const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 
 
 module.exports = buildModule("EventContractModule", (m) => {
-  const _initialPrice = m.getParameter("_initialPrice",30000000000000)
-  const PumpFunClone = m.contract("PumpFunClone",[_initialPrice]);
+  const PumpFunClone = m.contract("PumpFunClone");
 
   return { PumpFunClone };
 });
