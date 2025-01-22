@@ -34,41 +34,48 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
     uint constant MAX_SUPPLY = 1000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
-    uint256 public  INITIAL_PRICE;
+    uint256 public  INITIAL_PRICE = 30000000000000;
     uint256 public constant K = 8 * 10**15;
 
-
-    constructor(uint256 _initialPrice) Ownable(msg.sender) {
-        require(msg.sender != address(0), "Invalid recipient");
-        INITIAL_PRICE = _initialPrice;
+    event TokenCreated(address indexed creator, address tokenAddress, string name, string symbol);
+    event TokenPurchased(address indexed buyer, address tokenAddress, uint256 amount, uint256 ethSpent);
+    event LiquidityPoolCreated(address indexed tokenAddress, address poolAddress);
+    event LiquidityProvided(address indexed tokenAddress, uint256 tokenAmount, uint256 ethAmount, uint256 liquidity);
+    event LPBurned(address indexed poolAddress, uint256 liquidity);
+    constructor() Ownable(msg.sender) {
     }
 
-    function createToken(string memory name, string memory symbol, string memory imageUrl, string memory description) public payable returns(address) {
-
-        require(msg.value>= PUMPTOKEN_CREATION_PLATFORM_FEE, "fee not paid for memetoken creation");
+    function createToken(
+        string memory name,
+        string memory symbol,
+        string memory imageUrl,
+        string memory description
+    ) public payable nonReentrant returns (address) {
+        require(msg.value>= PUMPTOKEN_CREATION_PLATFORM_FEE, "fee not paid for token creation");
         Token ct = new Token(name, symbol,msg.sender,INIT_SUPPLY);
         address tokenAddress = address(ct);
         PumpToken memory newlyCreatedToken = PumpToken(name, symbol, description, imageUrl, 0, tokenAddress, msg.sender);
         PumpTokenAddresses.push(tokenAddress);
         addressToPumpTokenMapping[tokenAddress] = newlyCreatedToken;
+        emit TokenCreated(msg.sender, tokenAddress, name, symbol);
         return tokenAddress;
     }
 
-        function buToken(address tokenAddress, uint tokenQty) public payable returns(bool) {
+        function buyToken(address tokenAddress, uint tokenQty) public payable nonReentrant returns(bool) {
 
         require(addressToPumpTokenMapping[tokenAddress].tokenAddress!=address(0), "Token is not listed");
         
         PumpToken storage listedToken = addressToPumpTokenMapping[tokenAddress];
 
 
-        Token memeTokenCt = Token(tokenAddress);
+        Token tokenCt = Token(tokenAddress);
 
         // check to ensure funding goal is not met
         require(listedToken.fundingRaised <= PUMPCOIN_FUNDING_GOAL, "Funding has already been raised");
 
 
         // check to ensure there is enough supply to facilitate the purchase
-        uint currentSupply = memeTokenCt.totalSupply();
+        uint currentSupply = tokenCt.totalSupply();
         console.log("Current supply", currentSupply);
         console.log("Max supply", MAX_SUPPLY);
         uint available_qty = MAX_SUPPLY - currentSupply;
@@ -84,7 +91,7 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
         uint currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
         uint requiredEth = calculateCost(currentSupplyScaled, tokenQty);
 
-        console.log("ETH required for purchasing meme tokens is ",requiredEth);
+        console.log("ETH required for purchasing  tokens is ",requiredEth);
 
         // check if user has sent correct value of eth to facilitate this purchase
         require(msg.value >= requiredEth, "Incorrect value of ETH sent");
@@ -95,26 +102,24 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
         if(listedToken.fundingRaised >= PUMPCOIN_FUNDING_GOAL){
             // create liquidity pool
             address pool = _createLiquidityPool(tokenAddress);
-            console.log("Pool address ", pool);
+            emit LiquidityPoolCreated(tokenAddress, pool);
 
             // provide liquidity
             uint tokenAmount = INIT_SUPPLY;
             uint ethAmount = listedToken.fundingRaised;
             uint liquidity = _provideLiquidity(tokenAddress, tokenAmount, ethAmount);
-            console.log("UNiswap provided liquidty ", liquidity);
-
+            emit LiquidityProvided(tokenAddress, tokenAmount, ethAmount, liquidity);
             // burn lp token
             _burnLpTokens(pool, liquidity);
 
         }
 
         // mint the tokens
-        memeTokenCt.mint(msg.sender,tokenQty_scaled);
+        tokenCt.mint(msg.sender,tokenQty_scaled);
+        console.log("User balance of the tokens is ", tokenCt.balanceOf(msg.sender));
 
-        console.log("User balance of the tokens is ", memeTokenCt.balanceOf(msg.sender));
-
-        console.log("New available qty ", MAX_SUPPLY - memeTokenCt.totalSupply());
-
+        console.log("New available qty ", MAX_SUPPLY - tokenCt.totalSupply());
+        emit TokenPurchased(msg.sender, tokenAddress, tokenQty, msg.value);
         return true;
     }
 
@@ -152,27 +157,31 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
         return sum;
     }
 
-    function _burnLpTokens(address pool, uint liquidity) internal returns(uint){
+    function _burnLpTokens(address pool, uint liquidity) internal returns(bool){
         IUniswapV2Pair uniswapv2pairct = IUniswapV2Pair(pool);
         uniswapv2pairct.transfer(address(0), liquidity);
-        console.log("Uni v2 tokens burnt");
-        return 1;
+        emit LPBurned(pool, liquidity);
+        return true;
     }
 
-    function _createLiquidityPool(address memeTokenAddress) internal returns(address) {
+    function _createLiquidityPool(address tokenAddress) internal returns(address) {
         IUniswapV2Factory factory = IUniswapV2Factory(UNISWAP_V2_FACTORY_ADDRESS);
         IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
-        address pair = factory.createPair(memeTokenAddress, router.WETH());
+        address pair = factory.createPair(tokenAddress, router.WETH());
         return pair;
     }
 
-    function _provideLiquidity(address memeTokenAddress, uint tokenAmount, uint ethAmount) internal returns(uint){
-        Token memeTokenCt = Token(memeTokenAddress);
-        memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, tokenAmount);
+    function _provideLiquidity(
+        address tokenAddress,
+        uint256 tokenAmount,
+        uint256 ethAmount
+    ) internal returns (uint256) {
+        Token tokenCt = Token(tokenAddress);
+        tokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, tokenAmount);
         IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
         (uint256 amountToken, uint256 amountETH, uint256 liquidity) = router.addLiquidityETH{
             value: ethAmount
-        }(memeTokenAddress, tokenAmount, tokenAmount, ethAmount, address(this), block.timestamp);
+        }(tokenAddress, tokenAmount, tokenAmount, ethAmount, address(this), block.timestamp);
         return liquidity;
     }
 
