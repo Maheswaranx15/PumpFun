@@ -8,9 +8,9 @@ import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MockERC20 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20FlashMint {
-    constructor(address initialOwner,uint256 initialValue)
-        ERC20("MockERC20", "MCT")
+contract Token is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20FlashMint {
+    constructor(string memory name,string memory symbol,address initialOwner,uint256 initialValue)
+        ERC20(name, symbol)
         Ownable(initialOwner)
         ERC20Permit("MockERC20")
     {

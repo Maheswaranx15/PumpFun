@@ -1,140 +1,180 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./mocks/MockERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
 contract PumpFun is ReentrancyGuard, Ownable {
-    struct PumpEvent {
-        address token;
-        uint256 startTime;
-        uint256 endTime;
-        uint256 totalContributed;
-        uint256 targetPrice;
-        bool completed;
-        mapping(address => uint256) contributions;
+    struct PumpToken {
+        string name;
+        string symbol;
+        string description;
+        string tokenImageUrl;
+        uint256 fundingRaised;
+        address tokenAddress;
+        address creatorAddress;
     }
 
-    mapping(uint256 => PumpEvent) public pumpEvents;
-    uint256 public eventCount;
-    address public feeRecipient;
-    uint256 public platformFee; // Fee percentage in basis points (e.g., 100 = 1%)
+    address[] public PumpTokenAddresses;
+    mapping(address => PumpToken) public addressToPumpTokenMapping;
+    uint constant PUMPTOKEN_CREATION_PLATFORM_FEE = 0.0001 ether;
+    uint constant PUMPCOIN_FUNDING_DEADLINE_DURATION = 3 days;
+    uint constant PUMPCOIN_FUNDING_GOAL = 24 ether;
+    
 
-    event PumpEventCreated(
-        uint256 eventId,
-        address token,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 targetPrice
-    );
+    address constant UNISWAP_V2_FACTORY_ADDRESS = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    address constant UNISWAP_V2_ROUTER_ADDRESS = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    
+    uint constant DECIMALS = 10 ** 18;
+    uint constant MAX_SUPPLY = 1000000 * DECIMALS;
+    uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
-    event ContributionMade(
-        uint256 eventId,
-        address contributor,
-        uint256 amount
-    );
+    uint256 public  INITIAL_PRICE = 30000000000000;
+    uint256 public constant K = 8 * 10**15;
 
-    event PumpEventCompleted(uint256 eventId);
 
-    event RewardsClaimed(uint256 eventId, address contributor, uint256 reward);
-
-    modifier eventExists(uint256 eventId) {
-        require(eventId < eventCount, "Pump event does not exist");
-        _;
+    constructor(uint256 _initialPrice) Ownable(msg.sender) {
+        require(msg.sender != address(0), "Invalid recipient");
+        INITIAL_PRICE = _initialPrice;
     }
 
-    constructor(address _feeRecipient, uint256 _platformFee) Ownable(msg.sender) {
-        require(_feeRecipient != address(0), "Invalid fee recipient");
-        require(_platformFee <= 1000, "Fee too high");
-        feeRecipient = _feeRecipient;
-        platformFee = _platformFee;
+    function createToken(string memory name, string memory symbol, string memory imageUrl, string memory description) public payable returns(address) {
+
+        require(msg.value>= PUMPTOKEN_CREATION_PLATFORM_FEE, "fee not paid for memetoken creation");
+        Token ct = new Token(name, symbol,msg.sender,INIT_SUPPLY);
+        address tokenAddress = address(ct);
+        PumpToken memory newlyCreatedToken = PumpToken(name, symbol, description, imageUrl, 0, tokenAddress, msg.sender);
+        PumpTokenAddresses.push(tokenAddress);
+        addressToPumpTokenMapping[tokenAddress] = newlyCreatedToken;
+        return tokenAddress;
     }
 
-    function createPumpEvent(
-        address _token,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _targetPrice
-    ) external onlyOwner returns (uint256) {
-        require(_startTime >= block.timestamp, "Start time must be in the future");
-        require(_endTime > _startTime, "End time must be after start time");
+        function buToken(address tokenAddress, uint tokenQty) public payable returns(bool) {
 
-        PumpEvent storage newEvent = pumpEvents[eventCount];
-        newEvent.token = _token;
-        newEvent.startTime = _startTime;
-        newEvent.endTime = _endTime;
-        newEvent.targetPrice = _targetPrice;
+        require(addressToPumpTokenMapping[tokenAddress].tokenAddress!=address(0), "Token is not listed");
+        
+        PumpToken storage listedToken = addressToPumpTokenMapping[tokenAddress];
 
-        emit PumpEventCreated(eventCount, _token, _startTime, _endTime, _targetPrice);
 
-        return eventCount++;
+        Token memeTokenCt = Token(tokenAddress);
+
+        // check to ensure funding goal is not met
+        require(listedToken.fundingRaised <= PUMPCOIN_FUNDING_GOAL, "Funding has already been raised");
+
+
+        // check to ensure there is enough supply to facilitate the purchase
+        uint currentSupply = memeTokenCt.totalSupply();
+        console.log("Current supply", currentSupply);
+        console.log("Max supply", MAX_SUPPLY);
+        uint available_qty = MAX_SUPPLY - currentSupply;
+        console.log("Qty available for purchase ",available_qty);
+
+
+        uint scaled_available_qty = available_qty / DECIMALS;
+        uint tokenQty_scaled = tokenQty * DECIMALS;
+
+        require(tokenQty <= scaled_available_qty, "Not enough available supply");
+
+        // calculate the cost for purchasing tokenQty tokens as per the exponential bonding curve formula
+        uint currentSupplyScaled = (currentSupply - INIT_SUPPLY) / DECIMALS;
+        uint requiredEth = calculateCost(currentSupplyScaled, tokenQty);
+
+        console.log("ETH required for purchasing meme tokens is ",requiredEth);
+
+        // check if user has sent correct value of eth to facilitate this purchase
+        require(msg.value >= requiredEth, "Incorrect value of ETH sent");
+
+        // Incerement the funding
+        listedToken.fundingRaised+= msg.value;
+
+        if(listedToken.fundingRaised >= PUMPCOIN_FUNDING_GOAL){
+            // create liquidity pool
+            address pool = _createLiquidityPool(tokenAddress);
+            console.log("Pool address ", pool);
+
+            // provide liquidity
+            uint tokenAmount = INIT_SUPPLY;
+            uint ethAmount = listedToken.fundingRaised;
+            uint liquidity = _provideLiquidity(tokenAddress, tokenAmount, ethAmount);
+            console.log("UNiswap provided liquidty ", liquidity);
+
+            // burn lp token
+            _burnLpTokens(pool, liquidity);
+
+        }
+
+        // mint the tokens
+        memeTokenCt.mint(msg.sender,tokenQty_scaled);
+
+        console.log("User balance of the tokens is ", memeTokenCt.balanceOf(msg.sender));
+
+        console.log("New available qty ", MAX_SUPPLY - memeTokenCt.totalSupply());
+
+        return true;
     }
 
-    function contribute(uint256 eventId, uint256 amount) 
-        external 
-        nonReentrant 
-        eventExists(eventId) 
-    {
-        PumpEvent storage pumpEvent = pumpEvents[eventId];
-        require(block.timestamp >= pumpEvent.startTime, "Pump event has not started");
-        require(block.timestamp <= pumpEvent.endTime, "Pump event has ended");
-        require(!pumpEvent.completed, "Pump event already completed");
+        // Function to calculate the cost in wei for purchasing `tokensToBuy` starting from `currentSupply`
+    function calculateCost(uint256 currentSupply, uint256 tokensToBuy) public view returns (uint256) {
+        
+            // Calculate the exponent parts scaled to avoid precision loss
+        uint256 exponent1 = (K * (currentSupply + tokensToBuy)) / 10**18;
+        uint256 exponent2 = (K * currentSupply) / 10**18;
 
-        IERC20 token = IERC20(pumpEvent.token);
-        require(token.transferFrom(msg.sender, address(this), amount), "Token transfer failed");
+        // Calculate e^(kx) using the exp function
+        uint256 exp1 = exp(exponent1);
+        uint256 exp2 = exp(exponent2);
 
-        uint256 fee = (amount * platformFee) / 10000;
-        uint256 contribution = amount - fee;
-
-        require(token.transfer(feeRecipient, fee), "Fee transfer failed");
-
-        pumpEvent.contributions[msg.sender] += contribution;
-        pumpEvent.totalContributed += contribution;
-
-        emit ContributionMade(eventId, msg.sender, contribution);
+        // Cost formula: (P0 / k) * (e^(k * (currentSupply + tokensToBuy)) - e^(k * currentSupply))
+        // We use (P0 * 10^18) / k to keep the division safe from zero
+        uint256 cost = (INITIAL_PRICE * 10**18 * (exp1 - exp2)) / K;  // Adjust for k scaling without dividing by zero
+        return cost;
     }
 
-    function completePumpEvent(uint256 eventId) 
-        external 
-        onlyOwner 
-        eventExists(eventId) 
-    {
-        PumpEvent storage pumpEvent = pumpEvents[eventId];
-        require(block.timestamp > pumpEvent.endTime, "Pump event not yet ended");
-        require(!pumpEvent.completed, "Pump event already completed");
+     // Improved helper function to calculate e^x for larger x using a Taylor series approximation
+    function exp(uint256 x) internal pure returns (uint256) {
+        uint256 sum = 10**18;  // Start with 1 * 10^18 for precision
+        uint256 term = 10**18;  // Initial term = 1 * 10^18
+        uint256 xPower = x;  // Initial power of x
+        
+        for (uint256 i = 1; i <= 20; i++) {  // Increase iterations for better accuracy
+            term = (term * xPower) / (i * 10**18);  // x^i / i!
+            sum += term;
 
-        pumpEvent.completed = true;
-        emit PumpEventCompleted(eventId);
+            // Prevent overflow and unnecessary calculations
+            if (term < 1) break;
+        }
+
+        return sum;
     }
 
-    function claimRewards(uint256 eventId) 
-        external 
-        nonReentrant 
-        eventExists(eventId) 
-    {
-        PumpEvent storage pumpEvent = pumpEvents[eventId];
-        require(pumpEvent.completed, "Pump event not completed yet");
-
-        uint256 userContribution = pumpEvent.contributions[msg.sender];
-        require(userContribution > 0, "No contributions made by user");
-
-        uint256 reward = (userContribution * pumpEvent.totalContributed) / pumpEvent.totalContributed;
-        pumpEvent.contributions[msg.sender] = 0;
-
-        IERC20 token = IERC20(pumpEvent.token);
-        require(token.transfer(msg.sender, reward), "Reward transfer failed");
-
-        emit RewardsClaimed(eventId, msg.sender, reward);
+    function _burnLpTokens(address pool, uint liquidity) internal returns(uint){
+        IUniswapV2Pair uniswapv2pairct = IUniswapV2Pair(pool);
+        uniswapv2pairct.transfer(address(0), liquidity);
+        console.log("Uni v2 tokens burnt");
+        return 1;
     }
 
-    function updateFeeRecipient(address _feeRecipient) external onlyOwner {
-        require(_feeRecipient != address(0), "Invalid fee recipient");
-        feeRecipient = _feeRecipient;
+    function _createLiquidityPool(address memeTokenAddress) internal returns(address) {
+        IUniswapV2Factory factory = IUniswapV2Factory(UNISWAP_V2_FACTORY_ADDRESS);
+        IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
+        address pair = factory.createPair(memeTokenAddress, router.WETH());
+        return pair;
     }
 
-    function updatePlatformFee(uint256 _platformFee) external onlyOwner {
-        require(_platformFee <= 1000, "Fee too high");
-        platformFee = _platformFee;
+    function _provideLiquidity(address memeTokenAddress, uint tokenAmount, uint ethAmount) internal returns(uint){
+        Token memeTokenCt = Token(memeTokenAddress);
+        memeTokenCt.approve(UNISWAP_V2_ROUTER_ADDRESS, tokenAmount);
+        IUniswapV2Router01 router = IUniswapV2Router01(UNISWAP_V2_ROUTER_ADDRESS);
+        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = router.addLiquidityETH{
+            value: ethAmount
+        }(memeTokenAddress, tokenAmount, tokenAmount, ethAmount, address(this), block.timestamp);
+        return liquidity;
     }
+
+   
 }
