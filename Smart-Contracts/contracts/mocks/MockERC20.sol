@@ -9,12 +9,12 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MockERC20 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20FlashMint {
-    constructor(address initialOwner)
+    constructor(address initialOwner,uint256 initialValue)
         ERC20("MockERC20", "MCT")
         Ownable(initialOwner)
         ERC20Permit("MockERC20")
     {
-        _mint(msg.sender, 21000000 * 10 ** decimals());
+        _mint(msg.sender, initialValue);
     }
 
     function pause() public onlyOwner {
@@ -25,7 +25,7 @@ contract MockERC20 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit,
         _unpause();
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
 
