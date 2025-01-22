@@ -9,7 +9,7 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
-contract PumpFun is ReentrancyGuard, Ownable {
+contract PumpFunClone is ReentrancyGuard, Ownable {
     struct PumpToken {
         string name;
         string symbol;
@@ -34,7 +34,7 @@ contract PumpFun is ReentrancyGuard, Ownable {
     uint constant MAX_SUPPLY = 1000000 * DECIMALS;
     uint constant INIT_SUPPLY = 20 * MAX_SUPPLY / 100;
 
-    uint256 public  INITIAL_PRICE = 30000000000000;
+    uint256 public  INITIAL_PRICE;
     uint256 public constant K = 8 * 10**15;
 
 
