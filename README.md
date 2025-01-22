@@ -34,6 +34,10 @@ Hardhat (for smart contract development)
 MetaMask (browser extension for interacting with the dApp)
 
 
-Contract deployed To Holesky Testnet 
+Contract deployed To Holesky Testnet :
 ![Alt text](Smart-Contracts/Contract_deployment.png)
+Contract initial size :
+![Alt text](Smart-Contracts/initial-size.png)
+Contract Optimized size :
+![Alt text](Smart-Contracts/sizeAfter-Optimized.png)
 
