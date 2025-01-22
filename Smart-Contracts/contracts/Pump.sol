@@ -185,5 +185,13 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
         return liquidity;
     }
 
+    function getAllTokens() public view returns (PumpToken[] memory) {
+        PumpToken[] memory allTokens = new PumpToken[](PumpTokenAddresses.length);
+        for (uint i = 0; i < PumpTokenAddresses.length; i++) {
+            allTokens[i] = addressToPumpTokenMapping[PumpTokenAddresses[i]];
+        }
+        return allTokens;
+    }
+
    
 }

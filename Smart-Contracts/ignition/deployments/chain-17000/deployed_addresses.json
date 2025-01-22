@@ -1,5 +1,6 @@
 {
   "EventContractModule#MockERC20": "0x16e9090A785c63E7Ed0C8a2D6d722e73bAac5E8B",
   "EventContractModule#PumpFun": "0xAB0Ee22F38f09e9F6a3a121C5375f46Eb7a49A70",
-  "EventContractModule#PumpFunClone": "0x527355EA6300113d31a32b3480d0d3e3c84eD608"
+  "EventContractModule#PumpFunClone": "0x527355EA6300113d31a32b3480d0d3e3c84eD608",
+  "PumpFunContractModule#PumpFunClone": "0x1C23A18d0437A8142013f85E534c1F56DFEDF85f"
 }
