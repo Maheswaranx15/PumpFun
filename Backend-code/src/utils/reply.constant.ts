@@ -1,0 +1,1 @@
+export const REPLY_TEXT_MAX_LENGTH = 280;
