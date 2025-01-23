@@ -126,7 +126,7 @@ contract PumpFunClone is ReentrancyGuard, Ownable {
         // Function to calculate the cost in wei for purchasing `tokensToBuy` starting from `currentSupply`
     function calculateCost(uint256 currentSupply, uint256 tokensToBuy) public view returns (uint256) {
         
-            // Calculate the exponent parts scaled to avoid precision loss
+        // Calculate the exponent parts scaled to avoid precision loss
         uint256 exponent1 = (K * (currentSupply + tokensToBuy)) / 10**18;
         uint256 exponent2 = (K * currentSupply) / 10**18;
 

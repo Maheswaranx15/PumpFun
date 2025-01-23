@@ -29,12 +29,12 @@ describe("PumpFun Contract", function () {
         const tx1 = await PumpFun.createToken("Test", "TEST", "img://img.png", "hello there", {
             value: hre.ethers.parseEther("0.0001")
         });
-        const memeTokenAddress = await PumpFun.PumpTokenAddresses(0)
-        const tx2 = await PumpFun.buyToken(memeTokenAddress, 100, {
+        const TokenAddress = await PumpFun.PumpTokenAddresses(0)
+        const tx2 = await PumpFun.buyToken(TokenAddress, 100, {
             value: hre.ethers.parseEther("1")
         });
-        const memecoins = await PumpFun.getAllTokens();
-        console.log("Memecoins ", memecoins)
+        const coins = await PumpFun.getAllTokens();
+        console.log("coins ", coins)
     })
 
 });

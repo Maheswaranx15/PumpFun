@@ -42,3 +42,7 @@ Contract initial size :
 Contract Optimized size :
 ![Alt text](Smart-Contracts/sizeAfter-Optimized.png)
 
+
+Demo 1 : https://www.loom.com/share/2f25921084b84848b319d611fb87f60e?sid=cb24e2ce-94d3-4187-8f7d-423963ef4d41
+
+Demo 2 : https://www.loom.com/share/af07af57aca147af885cedc34c9e4570?sid=94b3e491-4ef5-4dff-8cb9-cbc8f6b76357

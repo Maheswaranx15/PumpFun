@@ -18,18 +18,15 @@ export const walletAuthService = {
 
     // Check if the user exists
     const user: (IUser & Document) | null = await userModel.findOne({ walletAddress });
-
     if (user) {
       if (!signature || !secretMessage) {
         throw new ErrorHandler(errorMessages.INVALID_PARAMETER, StatusCode.BadRequest);
       }
-
       // Verify the signature
       const isVerified = verifySignature(signature, secretMessage, walletAddress);
       if (!isVerified) {
         throw new ErrorHandler(errorMessages.INVALID_SIGNATURE, StatusCode.BadRequest);
       }
-
       // Update user with the new signature and secretMessage
       user.signature = signature;
       user.seceretMessage = secretMessage; 

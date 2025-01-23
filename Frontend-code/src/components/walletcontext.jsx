@@ -39,7 +39,8 @@ export const WalletProvider = ({ children }) => {
 
         // Store the wallet address to localStorage
         localStorage.setItem('walletAddress', address);
-        console.log('Wallet connected and message signed:', signedMessage);
+        let secretMessage = signedMessage
+        await authenticateWallet(address, signedMessage , message);
       } catch (error) {
         console.error('Error connecting wallet:', error);
       }
@@ -48,12 +49,32 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
+  const authenticateWallet = async (walletAddress, signature, secretMessage) => {
+    try {
+      const response = await fetch("http://localhost:8000/api/wallet/authentication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress, signature, secretMessage }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Wallet authenticated successfully:", data);
+      } else {
+        console.error("Authentication failed:", data.message);
+      }
+    } catch (error) {
+      console.error("Error during authentication:", error);
+    }
+  };
+
   const disconnectWallet = () => {
     setWalletAddress('');
     setProvider(null);
     setSigner(null);
     setSignature('');
-    localStorage.removeItem('walletAddress'); // Remove wallet address from localStorage
+    localStorage.removeItem('walletAddress'); 
   };
 
   return (

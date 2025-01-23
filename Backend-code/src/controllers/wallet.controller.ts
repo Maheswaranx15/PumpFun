@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { StatusCode } from "../interfaces/enum/statuscode";
 import ErrorHandler from "../utils/ErrorHandler";
-import { errorMessages, successMessages } from "../utils/commonMessages";
+import { errorMessages } from "../utils/commonMessages";
 import { CatchAsyncError } from "../utils/catchAsyncError";
 import { walletAuthService } from "../services/wallet.service";
 
@@ -13,7 +13,6 @@ export const walletAuthentication = CatchAsyncError(
         secretMessage?: string;
         walletAddress?: string;
       };
-
       if (!walletAddress) {
         return next(
           new ErrorHandler(
@@ -28,10 +27,9 @@ export const walletAuthentication = CatchAsyncError(
         signature,
         secretMessage
       );
-
       return res.status(StatusCode.OK).json({
         success: true,
-        message: result.message, // Message (either login or registration success)
+        message: result.message, 
         data: result.user || result.newUser, // User data
       });
     } catch (error: any) {

@@ -16,15 +16,15 @@ const App = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchMemeTokens = async () => {
+    const fetchTokens = async () => {
       try {
         const rpcProvider = new ethers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
         const contract = new ethers.Contract(process.env.REACT_APP_CONTRACT_ADDRESS, abi, rpcProvider);
 
-        const memeTokens = await contract.getAllTokens();
+        const Tokens = await contract.getAllTokens();
 
         setCards(
-          memeTokens.map((token) => ({
+          Tokens.map((token) => ({
             name: token.name,
             symbol: token.symbol,
             description: token.description,
@@ -35,13 +35,13 @@ const App = () => {
           }))
         );
       } catch (error) {
-        console.error('Error fetching meme tokens:', error);
+        console.error('Error fetching  tokens:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMemeTokens();
+    fetchTokens();
   }, []);
 
 
