@@ -29,9 +29,10 @@ export const walletAuthentication = CatchAsyncError(
         secretMessage
       );
 
-      return res.status(StatusCode.Created).json({
+      return res.status(StatusCode.OK).json({
         success: true,
-        message: successMessages.USER_SUCCESS,
+        message: result.message, // Message (either login or registration success)
+        data: result.user || result.newUser, // User data
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, StatusCode.BadRequest));
