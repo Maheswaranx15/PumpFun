@@ -15,12 +15,13 @@ frontend: Houses the React-based frontend for the dApp.
 
 backend: Contains the Node.js backend for handling API interactions and off-chain logic.
 
+```shell
 project-root/
 ├── smart-contracts/
 ├── frontend/
 ├── backend/
 ├── README.md
-
+```
 Requirements
 
 Ensure you have the following installed before proceeding:
