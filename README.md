@@ -36,11 +36,11 @@ MetaMask (browser extension for interacting with the dApp)
 
 
 Contract deployed To Holesky Testnet :
-![Alt text](Smart-Contracts/Contract_deployment.png)
+![Alt text](smartcontracts/Contract_deployment.png)
 Contract initial size :
-![Alt text](Smart-Contracts/initial-size.png)
+![Alt text](smartcontracts/initial-size.png)
 Contract Optimized size :
-![Alt text](Smart-Contracts/sizeAfter-Optimized.png)
+![Alt text](smartcontracts/sizeAfter-Optimized.png)
 
 
 Demo 1 : https://www.loom.com/share/2f25921084b84848b319d611fb87f60e?sid=cb24e2ce-94d3-4187-8f7d-423963ef4d41
