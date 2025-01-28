@@ -37,28 +37,6 @@ describe("PumpFun Contract", function () {
         console.log("coins ", coins)
     })
 
-    it("Should allow a user to purchase the token", async function() {
-        const tx1 = await PumpFun.createToken("Test", "TEST", "img://img.png", "hello there", {
-            value: hre.ethers.parseEther("0.0001")
-        });
-        const TokenAddress = await PumpFun.PumpTokenAddresses(0)
-        const tx2 = await PumpFun.buyToken(TokenAddress, 100, {
-            value: hre.ethers.parseEther("1")
-        });
-        const coins = await PumpFun.getAllTokens();
-        console.log("coins ", coins)
-    })
 
-    it("Should allow a user to purchase the token", async function() {
-        const tx1 = await PumpFun.createToken("Test", "TEST", "img://img.png", "hello there", {
-            value: hre.ethers.parseEther("0.0001")
-        });
-        const TokenAddress = await PumpFun.PumpTokenAddresses(0)
-        const tx2 = await PumpFun.buyToken(TokenAddress, 100, {
-            value: hre.ethers.parseEther("1")
-        });
-        const coins = await PumpFun.getAllTokens();
-        console.log("coins ", coins)
-    })
 
 });
