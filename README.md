@@ -17,7 +17,7 @@ backend: Contains the Node.js backend for handling API interactions and off-chai
 
 ```shell
 project-root/
-├── smart-contracts/
+├── smartcontracts/
 ├── frontend/
 ├── backend/
 ├── README.md
