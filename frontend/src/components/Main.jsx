@@ -1,6 +1,6 @@
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
 import React from 'react'
-import Home from './Home'
+import Home from './Home.jsx'
 import TokenDetail from './TokenDetail.jsx'
 import TokenCreate from './TokenCreate.jsx'
 
