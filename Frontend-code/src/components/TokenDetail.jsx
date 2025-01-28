@@ -104,30 +104,6 @@ const TokenDetail = () => {
       console.error('Error calculating cost:', error);
     }
   };
-
-  // Function to handle purchase
-  // const handlePurchase = async () => {
-  //   try {
-  //     if (!walletAddress) {
-  //       alert('Please connect your wallet first.');
-  //       return;
-  //     }
-  //     const provider = new ethers.BrowserProvider(window.ethereum);
-  //     const signer = await provider.getSigner();
-  //     console.log(signer)
-  //     const contract = new ethers.Contract(process.env.REACT_APP_CONTRACT_ADDRESS, abi, signer);
-
-  //     const transaction = await contract.buyToken(tokenAddress, purchaseAmount,{
-  //       value: ethers.parseUnits(cost, 'ether'),
-  //     }); 
-  //     const receipt = await transaction.wait();
-
-  //     alert(`Transaction successful! Hash: ${receipt.hash}`);
-  //     setIsModalOpen(false); 
-  //   } catch (error) {
-  //     console.error('Error during purchase:', error);
-  //   }
-  // };
   const handlePurchase = async () => {
     try {
       if (!walletAddress) {
